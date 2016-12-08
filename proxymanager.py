@@ -17,8 +17,13 @@ class ProxyNode:
 class ProxyManager:
     def __init__(self, filePath):
         self._proxyMap = {}
+        self._proxyBackup = {}
         self._lock = threading.Lock()
+        self._filePath = filePath
 
+        self.load(filePath)
+
+    def load(self, filePath):
         with open(filePath, "r") as fp:
             for line in fp.readlines():
                 data = line.split("\t")
@@ -38,6 +43,7 @@ class ProxyManager:
                     node.count = defaultCount
                     self._proxyMap[data[1]] = node
 
+
     def update(self):
         self._lock.acquire()
         ret = ""
@@ -49,6 +55,8 @@ class ProxyManager:
                 socks.setdefaultproxy(node.sockType, node.ip, node.port)
                 socket.socket = socks.socksocket 
                 ret = node.ip
+            else:
+                self.load(self._filePath)
 
         except Exception, msg:
             print msg
@@ -67,11 +75,8 @@ class ProxyManager:
             if node and node.count > 0:
                 node.count = node.count - 1
             else:
-                if ip in self._proxyMap > 0:
+                if ip in self._proxyMap:
                     del self._proxyMap[ip]
-                else:
-                    sys.stderr.write("[-] proxy not be use\n")
-                    sys.exit(1)
 
         except Exception, msg:
             sys.stderr.write("[-] %s\n" % msg)
